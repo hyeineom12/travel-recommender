@@ -1,0 +1,22 @@
+# 비밀값
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# 데이터 (원본은 커밋하지 않는다)
+data/raw/
+*.csv
+*.xlsx
+!data/sample/*.csv
+
+# OS / 에디터
+.DS_Store
+.idea/
+.vscode/
