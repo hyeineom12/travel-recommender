@@ -1,0 +1,163 @@
+import type { Category, CategoryId, Member, Place } from "./types";
+
+export const CATEGORIES: Category[] = [
+  { id: "landmark", label: "명소", color: "#2f45e0" },
+  { id: "food", label: "식사", color: "#f9584a" },
+  { id: "cafe", label: "카페", color: "#b07a4a" },
+  { id: "shopping", label: "쇼핑", color: "#e0498f" },
+  { id: "culture", label: "문화", color: "#7a5af5" },
+  { id: "activity", label: "체험", color: "#0ea5e9" },
+  { id: "nature", label: "자연", color: "#12b98c" },
+];
+
+export const CATEGORY_MAP: Record<CategoryId, Category> = CATEGORIES.reduce(
+  (a, c) => ({ ...a, [c.id]: c }),
+  {} as Record<CategoryId, Category>
+);
+
+const t = (h: number, m = 0) => h * 60 + m;
+const ALLDAY: [number, number] = [0, 1440];
+
+/**
+ * 오사카 장소 데이터 (프로토타입 36곳).
+ * 좌표는 대략값이며, 본 구현에서는 OSM Overpass API로 수집해 검증할 예정.
+ */
+export const PLACES: Place[] = [
+  // ── 우메다 · 키타 ──
+  { id: "umeda_sky", name: "우메다 스카이빌딩 공중정원", area: "우메다", category: "landmark",
+    lat: 34.7052, lng: 135.4903, cost: 15000, stayMin: 90, openFrom: t(9,30), openTo: t(22,30),
+    exposure: 0.6, covered: false, bagLoad: 0, popularity: 0.85, blurb: "360도 야경 전망대. 해질녘이 가장 좋아요." },
+  { id: "hankyu", name: "한큐백화점 우메다", area: "우메다", category: "shopping",
+    lat: 34.7025, lng: 135.4985, cost: 60000, stayMin: 90, openFrom: t(10), openTo: t(20),
+    exposure: 0, covered: true, bagLoad: 0.6, popularity: 0.6, blurb: "지하 식품관이 유명한 대형 백화점." },
+  { id: "grand_front", name: "그랑프론트 오사카", area: "우메다", category: "shopping",
+    lat: 34.7045, lng: 135.4940, cost: 40000, stayMin: 80, openFrom: t(10), openTo: t(21),
+    exposure: 0, covered: true, bagLoad: 0.5, popularity: 0.55, blurb: "우메다역 직결 복합 쇼핑몰." },
+  { id: "whity", name: "화이티 우메다 지하상가", area: "우메다", category: "shopping",
+    lat: 34.7020, lng: 135.4990, cost: 20000, stayMin: 60, openFrom: t(10), openTo: t(21),
+    exposure: 0, covered: true, bagLoad: 0.3, popularity: 0.45, blurb: "비 와도 걱정 없는 대형 지하상가." },
+  { id: "nakazaki", name: "나카자키초 카페거리", area: "우메다", category: "cafe",
+    lat: 34.7080, lng: 135.5040, cost: 9000, stayMin: 60, openFrom: t(11), openTo: t(19),
+    exposure: 0.6, covered: false, bagLoad: 0, popularity: 0.4, blurb: "옛 골목을 개조한 카페들이 모인 동네." },
+  { id: "hanadako", name: "하나다코 타코야키", area: "우메다", category: "food",
+    lat: 34.7035, lng: 135.5000, cost: 7500, stayMin: 30, openFrom: t(10), openTo: t(23),
+    exposure: 0.3, covered: true, bagLoad: 0, popularity: 0.6, blurb: "파가 듬뿍 올라간 네기마요 타코야키." },
+  { id: "donki_umeda", name: "돈키호테 우메다", area: "우메다", category: "shopping",
+    lat: 34.7045, lng: 135.5020, cost: 30000, stayMin: 60, openFrom: ALLDAY[0], openTo: ALLDAY[1],
+    exposure: 0, covered: true, bagLoad: 0.5, popularity: 0.55, blurb: "24시간 영업. 기념품 쇼핑 마무리에 좋아요." },
+
+  // ── 오사카성 · 나카노시마 ──
+  { id: "osaka_castle", name: "오사카성 천수각", area: "오사카성", category: "landmark",
+    lat: 34.6873, lng: 135.5259, cost: 6000, stayMin: 90, openFrom: t(9), openTo: t(17),
+    exposure: 0.6, covered: false, bagLoad: 0, popularity: 0.95, blurb: "오사카의 상징. 성 주변 산책도 함께." },
+  { id: "castle_park", name: "오사카성 공원", area: "오사카성", category: "nature",
+    lat: 34.6860, lng: 135.5250, cost: 0, stayMin: 60, openFrom: t(5), openTo: t(23),
+    exposure: 1, covered: false, bagLoad: 0, popularity: 0.6, blurb: "넓은 공원. 봄에는 벚꽃 명소." },
+  { id: "nakanoshima", name: "나카노시마 공원", area: "나카노시마", category: "nature",
+    lat: 34.6920, lng: 135.5090, cost: 0, stayMin: 45, openFrom: ALLDAY[0], openTo: ALLDAY[1],
+    exposure: 1, covered: false, bagLoad: 0, popularity: 0.4, blurb: "강 사이에 낀 도심 공원. 장미원이 예뻐요." },
+  { id: "science_museum", name: "오사카 시립과학관", area: "나카노시마", category: "culture",
+    lat: 34.6913, lng: 135.4913, cost: 6000, stayMin: 90, openFrom: t(9,30), openTo: t(17),
+    exposure: 0, covered: false, bagLoad: 0, popularity: 0.35, blurb: "플라네타리움이 있는 과학관." },
+  { id: "nmao", name: "국립국제미술관", area: "나카노시마", category: "culture",
+    lat: 34.6917, lng: 135.4919, cost: 8000, stayMin: 80, openFrom: t(10), openTo: t(17),
+    exposure: 0, covered: false, bagLoad: 0, popularity: 0.3, blurb: "지하로 내려가는 독특한 구조의 현대미술관." },
+
+  // ── 난바 · 신사이바시 · 도톤보리 ──
+  { id: "glico", name: "도톤보리 글리코사인", area: "난바", category: "landmark",
+    lat: 34.6687, lng: 135.5013, cost: 0, stayMin: 40, openFrom: ALLDAY[0], openTo: ALLDAY[1],
+    exposure: 1, covered: false, bagLoad: 0, popularity: 1.0, blurb: "오사카 인증샷 필수 코스. 밤 네온이 매력." },
+  { id: "shinsaibashi", name: "신사이바시스지 상점가", area: "신사이바시", category: "shopping",
+    lat: 34.6723, lng: 135.5013, cost: 50000, stayMin: 90, openFrom: t(11), openTo: t(21),
+    exposure: 0, covered: true, bagLoad: 0.6, popularity: 0.85, blurb: "지붕 덮인 600m 아케이드 상점가." },
+  { id: "kuromon", name: "구로몬 시장", area: "난바", category: "food",
+    lat: 34.6654, lng: 135.5063, cost: 15000, stayMin: 60, openFrom: t(9), openTo: t(18),
+    exposure: 0.3, covered: true, bagLoad: 0.1, popularity: 0.9, blurb: "해산물·꼬치구이를 즐기는 오사카의 부엌." },
+  { id: "hozenji", name: "호젠지 요코초", area: "난바", category: "landmark",
+    lat: 34.6683, lng: 135.5028, cost: 0, stayMin: 30, openFrom: ALLDAY[0], openTo: ALLDAY[1],
+    exposure: 0.6, covered: false, bagLoad: 0, popularity: 0.5, blurb: "이끼 덮인 불상이 있는 옛 골목." },
+  { id: "namba_parks", name: "난바 파크스", area: "난바", category: "shopping",
+    lat: 34.6595, lng: 135.5020, cost: 35000, stayMin: 80, openFrom: t(11), openTo: t(21),
+    exposure: 0.3, covered: true, bagLoad: 0.5, popularity: 0.55, blurb: "옥상 정원이 있는 쇼핑몰." },
+  { id: "denden", name: "덴덴타운", area: "난바", category: "shopping",
+    lat: 34.6607, lng: 135.5061, cost: 25000, stayMin: 70, openFrom: t(11), openTo: t(20),
+    exposure: 0.6, covered: false, bagLoad: 0.4, popularity: 0.35, blurb: "오사카의 전자·애니메이션 거리." },
+  { id: "ichiran", name: "이치란 라멘 도톤보리", area: "난바", category: "food",
+    lat: 34.6700, lng: 135.5020, cost: 12000, stayMin: 40, openFrom: ALLDAY[0], openTo: ALLDAY[1],
+    exposure: 0, covered: true, bagLoad: 0, popularity: 0.8, blurb: "1인석 돈코츠 라멘. 24시간 영업." },
+  { id: "mizuno", name: "미즈노 오코노미야키", area: "난바", category: "food",
+    lat: 34.6680, lng: 135.5010, cost: 16000, stayMin: 50, openFrom: t(11), openTo: t(22),
+    exposure: 0, covered: false, bagLoad: 0, popularity: 0.65, blurb: "웨이팅 긴 노포 오코노미야키." },
+  { id: "daruma", name: "다루마 쿠시카츠", area: "신세카이", category: "food",
+    lat: 34.6525, lng: 135.5060, cost: 14000, stayMin: 50, openFrom: t(11), openTo: t(22,30),
+    exposure: 0, covered: false, bagLoad: 0, popularity: 0.7, blurb: "소스 두 번 찍기 금지. 신세카이 명물." },
+  { id: "horai", name: "551 호라이 난바", area: "난바", category: "food",
+    lat: 34.6660, lng: 135.5010, cost: 6000, stayMin: 20, openFrom: t(10), openTo: t(22),
+    exposure: 0, covered: true, bagLoad: 0, popularity: 0.6, blurb: "오사카 사람들의 국민 간식 고기만두." },
+  { id: "rikuro", name: "리쿠로 치즈케이크 난바", area: "난바", category: "cafe",
+    lat: 34.6665, lng: 135.5015, cost: 5000, stayMin: 25, openFrom: t(9), openTo: t(20),
+    exposure: 0, covered: true, bagLoad: 0.1, popularity: 0.65, blurb: "갓 구운 폭신한 치즈케이크." },
+  { id: "amemura", name: "아메리카무라", area: "신사이바시", category: "shopping",
+    lat: 34.6730, lng: 135.4980, cost: 25000, stayMin: 60, openFrom: t(11), openTo: t(20),
+    exposure: 0.6, covered: false, bagLoad: 0.4, popularity: 0.45, blurb: "빈티지숍이 모인 젊은 거리." },
+  { id: "doguyasuji", name: "도구야스지 상점가", area: "난바", category: "shopping",
+    lat: 34.6650, lng: 135.5055, cost: 15000, stayMin: 45, openFrom: t(10), openTo: t(18),
+    exposure: 0, covered: true, bagLoad: 0.3, popularity: 0.3, blurb: "주방용품 전문 아케이드. 기념품 찾기 좋아요." },
+
+  // ── 신세카이 · 텐노지 ──
+  { id: "tsutenkaku", name: "츠텐카쿠", area: "신세카이", category: "landmark",
+    lat: 34.6524, lng: 135.5063, cost: 12000, stayMin: 50, openFrom: t(10), openTo: t(20),
+    exposure: 0.3, covered: false, bagLoad: 0, popularity: 0.7, blurb: "쇼와 시대 분위기의 전망탑." },
+  { id: "shitennoji", name: "시텐노지", area: "텐노지", category: "culture",
+    lat: 34.6541, lng: 135.5165, cost: 4000, stayMin: 60, openFrom: t(8,30), openTo: t(16,30),
+    exposure: 0.6, covered: false, bagLoad: 0, popularity: 0.45, blurb: "일본에서 가장 오래된 관영 사찰." },
+  { id: "harukas", name: "아베노 하루카스 전망대", area: "텐노지", category: "landmark",
+    lat: 34.6458, lng: 135.5136, cost: 18000, stayMin: 70, openFrom: t(9), openTo: t(22),
+    exposure: 0, covered: true, bagLoad: 0, popularity: 0.75, blurb: "일본 최고층 빌딩 전망대. 300m 높이." },
+  { id: "shinsekai", name: "신세카이 거리", area: "신세카이", category: "landmark",
+    lat: 34.6520, lng: 135.5055, cost: 0, stayMin: 40, openFrom: ALLDAY[0], openTo: ALLDAY[1],
+    exposure: 1, covered: false, bagLoad: 0, popularity: 0.7, blurb: "간판이 빼곡한 복고풍 거리." },
+  { id: "tennoji_zoo", name: "텐노지 동물원", area: "텐노지", category: "activity",
+    lat: 34.6510, lng: 135.5090, cost: 5000, stayMin: 90, openFrom: t(9,30), openTo: t(17),
+    exposure: 1, covered: false, bagLoad: 0, popularity: 0.35, blurb: "도심 한가운데 있는 100년 넘은 동물원." },
+
+  // ── 베이 (덴포잔) ──
+  { id: "kaiyukan", name: "가이유칸 수족관", area: "베이", category: "activity",
+    lat: 34.6545, lng: 135.4289, cost: 24000, stayMin: 150, openFrom: t(10), openTo: t(20),
+    exposure: 0, covered: false, bagLoad: 0, popularity: 0.9, blurb: "세계 최대급 수족관. 고래상어가 있어요." },
+  { id: "tempozan", name: "덴포잔 대관람차", area: "베이", category: "activity",
+    lat: 34.6540, lng: 135.4295, cost: 8000, stayMin: 30, openFrom: t(10), openTo: t(22),
+    exposure: 0.3, covered: false, bagLoad: 0, popularity: 0.5, blurb: "높이 112m 관람차. 오사카만 전망." },
+  { id: "usj", name: "유니버설 스튜디오 재팬", area: "베이", category: "activity",
+    lat: 34.6656, lng: 135.4323, cost: 85000, stayMin: 480, openFrom: t(9), openTo: t(21),
+    exposure: 1, covered: false, bagLoad: 0, popularity: 0.95, blurb: "하루를 통째로 써야 하는 테마파크." },
+  { id: "kuishinbo", name: "나니와 쿠이신보 요코초", area: "베이", category: "food",
+    lat: 34.6548, lng: 135.4290, cost: 13000, stayMin: 60, openFrom: t(11), openTo: t(20),
+    exposure: 0, covered: false, bagLoad: 0, popularity: 0.35, blurb: "쇼와 거리를 재현한 실내 먹자골목." },
+
+  // ── 기타 ──
+  { id: "sumiyoshi", name: "스미요시타이샤", area: "스미요시", category: "culture",
+    lat: 34.6126, lng: 135.4934, cost: 0, stayMin: 60, openFrom: t(6), openTo: t(17),
+    exposure: 1, covered: false, bagLoad: 0, popularity: 0.4, blurb: "아치형 다리로 유명한 1800년 된 신사." },
+  { id: "tsuruhashi", name: "츠루하시 코리아타운", area: "츠루하시", category: "food",
+    lat: 34.6650, lng: 135.5330, cost: 12000, stayMin: 60, openFrom: t(10), openTo: t(19),
+    exposure: 0.6, covered: false, bagLoad: 0.2, popularity: 0.35, blurb: "일본 속 한국 시장. 골목이 미로 같아요." },
+];
+
+export const PLACE_MAP: Record<string, Place> = PLACES.reduce(
+  (a, p) => ({ ...a, [p.id]: p }),
+  {} as Record<string, Place>
+);
+
+export const MEMBERS: Member[] = [
+  { id: "me", name: "혜인", color: "#2f45e0" },
+  { id: "yunjin", name: "윤진", color: "#f9584a" },
+  { id: "joeun", name: "조은", color: "#12b98c" },
+  { id: "minseo", name: "민서", color: "#7a5af5" },
+  { id: "doyun", name: "도윤", color: "#f59e0b" },
+];
+
+export const MEMBER_MAP: Record<string, Member> = MEMBERS.reduce(
+  (a, m) => ({ ...a, [m.id]: m }),
+  {} as Record<string, Member>
+);

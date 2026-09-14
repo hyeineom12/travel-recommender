@@ -8,7 +8,11 @@ node_modules/
 dist/
 build/
 .next/
+out/
+web/out/
 *.log
+*.tsbuildinfo
+next-env.d.ts
 
 # Python (분석·전처리용)
 __pycache__/
