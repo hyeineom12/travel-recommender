@@ -2,10 +2,11 @@
 import { usePathname } from "next/navigation";
 
 const STEPS = [
-  { m: ["/"], label: "시작" },
-  { m: ["/pick"], label: "장소 고르기" },
-  { m: ["/condition"], label: "조건 입력" },
+  { m: ["/"], label: "기간·동행자" },
+  { m: ["/pick"], label: "장소 찾기" },
   { m: ["/waiting"], label: "모으는 중" },
+  { m: ["/shortlist"], label: "모두의 후보" },
+  { m: ["/condition"], label: "조건 입력" },
   { m: ["/result"], label: "합의 결과" },
   { m: ["/plan"], label: "일정·동선" },
   { m: ["/compare"], label: "전략 비교" },

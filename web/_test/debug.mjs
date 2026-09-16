@@ -13,9 +13,16 @@ const C = require("../src/lib/consensus.ts");
 const P = require("../src/lib/places.ts");
 const D = require("../src/lib/demo.ts");
 
-const me = { memberId:"me", picks:["glico","kuromon","umeda_sky","nakazaki","ichiran"],
-             must:"umeda_sky", veto:"shinsaibashi", budget:300000, walkLimit:6, activeMin:480 };
-const subs = [me, ...D.DEMO_SUBMISSIONS];
+const MY_LONGLIST = ["glico","kuromon","umeda_sky","nakazaki","ichiran"];
+const COMPANIONS = ["m1","m2","m3","m4"];
+const DAYS = 4;
+
+const pool = [...MY_LONGLIST];
+D.demoLonglists(COMPANIONS).forEach(s => s.longlist.forEach(id => { if(!pool.includes(id)) pool.push(id); }));
+
+const me = { memberId:"me", longlist:MY_LONGLIST, picks:[...MY_LONGLIST],
+             must:"umeda_sky", veto:"shinsaibashi", budgetPerDay:75000, stepLimit:8500, activeMin:480 };
+const subs = [me, ...D.demoSubmissions(COMPANIONS, pool)].map(s => C.toView(s, DAYS));
 
 const musts = new Set(subs.map(s=>s.must));
 const vetos = new Set(subs.map(s=>s.veto).filter(Boolean));

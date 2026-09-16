@@ -1,13 +1,22 @@
 "use client";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { DEMO_SUBMISSIONS, MY_DEFAULT } from "@/lib/demo";
+import { MY_DEFAULT, demoSubmissions } from "@/lib/demo";
 import { buildConsensus } from "@/lib/consensus";
 import { buildSchedule } from "@/lib/schedule";
-import { makeCustomPlace, setCustomPlaces, type CustomPlaceInput } from "@/lib/places";
-import type { Place, Strategy, Submission } from "@/lib/types";
+import {
+  DEFAULT_MEMBERS,
+  makeCustomPlace,
+  makeMembers,
+  setCustomPlaces,
+  setMembers,
+  type CustomPlaceInput,
+} from "@/lib/places";
+import type { Member, Place, Strategy, Submission } from "@/lib/types";
 
 export interface AppState {
   nights: number;
+  /** 첫 화면에서 정한 참여자 — 첫 번째가 '나' */
+  members: Member[];
   mine: Submission;
   submitted: boolean;
   strategy: Strategy;
@@ -18,6 +27,7 @@ export interface AppState {
 
 const INITIAL: AppState = {
   nights: 3,
+  members: DEFAULT_MEMBERS,
   mine: MY_DEFAULT,
   submitted: false,
   strategy: "fairness",
@@ -25,17 +35,22 @@ const INITIAL: AppState = {
   customPlaces: [],
 };
 
-const KEY = "gatiga-v1";
+const KEY = "gatiga-v2";
 
 interface Ctx {
   state: AppState;
   set: (p: Partial<AppState>) => void;
   setMine: (p: Partial<Submission>) => void;
+  /** 이름 목록으로 참여자를 다시 만든다 (첫 화면) */
+  setMemberNames: (names: string[]) => void;
   /** 직접 추가한 장소를 등록하고 만들어진 장소를 돌려준다 */
   addPlace: (input: CustomPlaceInput) => Place;
   reset: () => void;
   ready: boolean;
+  /** 나 + 동행자 전원의 입력 */
   submissions: Submission[];
+  /** 2차 선택 화면에서 쓰는 그룹 후보 풀 (전원의 1차 선택 합집합) */
+  pool: string[];
   consensus: ReturnType<typeof buildConsensus>;
   schedule: ReturnType<typeof buildSchedule>;
 }
@@ -61,10 +76,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
 
   const set = (p: Partial<AppState>) => setState((s) => ({ ...s, ...p }));
   const setMine = (p: Partial<Submission>) => setState((s) => ({ ...s, mine: { ...s.mine, ...p } }));
-  const reset = () => {
-    setState(INITIAL);
-    try { window.localStorage.removeItem(KEY); } catch { /* 무시 */ }
-  };
+  const setMemberNames = (names: string[]) => setState((s) => ({ ...s, members: makeMembers(names) }));
 
   const addPlace = (input: CustomPlaceInput) => {
     const place = makeCustomPlace(input);
@@ -72,10 +84,33 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     return place;
   };
 
-  // 추가된 장소는 consensus·schedule이 id로 찾을 수 있어야 하므로 계산 전에 등록한다.
-  setCustomPlaces(state.customPlaces);
+  const reset = () => {
+    setState(INITIAL);
+    try { window.localStorage.removeItem(KEY); } catch { /* 무시 */ }
+  };
 
-  const submissions = useMemo(() => [state.mine, ...DEMO_SUBMISSIONS], [state.mine]);
+  // 추가된 장소·참여자는 계산과 설명 생성이 id로 찾을 수 있어야 하므로 계산 전에 등록한다.
+  setCustomPlaces(state.customPlaces);
+  setMembers(state.members);
+
+  const companionIds = useMemo(
+    () => state.members.filter((m) => m.id !== "me").map((m) => m.id),
+    [state.members]
+  );
+
+  /** 1차 — 전원이 검색으로 찾아온 곳을 합친 그룹 후보 풀 */
+  const pool = useMemo(() => {
+    const ids = [...state.mine.longlist];
+    demoSubmissions(companionIds, []).forEach((s) =>
+      s.longlist.forEach((id) => { if (!ids.includes(id)) ids.push(id); })
+    );
+    return ids;
+  }, [state.mine.longlist, companionIds]);
+
+  const submissions = useMemo(
+    () => [state.mine, ...demoSubmissions(companionIds, pool)],
+    [state.mine, companionIds, pool]
+  );
 
   const consensus = useMemo(
     () => buildConsensus({
@@ -93,7 +128,10 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
   }, [consensus, state.nights, submissions]);
 
   return (
-    <C.Provider value={{ state, set, setMine, addPlace, reset, ready, submissions, consensus, schedule }}>
+    <C.Provider value={{
+      state, set, setMine, setMemberNames, addPlace, reset, ready,
+      submissions, pool, consensus, schedule,
+    }}>
       {children}
     </C.Provider>
   );

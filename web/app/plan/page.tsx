@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useTrip } from "@/components/store";
-import { MEMBER_MAP } from "@/lib/places";
+import { findMember } from "@/lib/places";
+import { stepsToKm } from "@/lib/consensus";
 import { fmtTime } from "@/lib/schedule";
 import { explainDay } from "@/lib/explain";
 import { RouteMap, dayColor } from "@/components/RouteMap";
@@ -14,7 +15,7 @@ export default function Plan() {
   const [day, setDay] = useState(1);
   const [map, setMap] = useState(false);
   const plan = schedule.plans.find((p) => p.day === day) ?? schedule.plans[0];
-  const groupWalk = Math.min(...submissions.map((s) => s.walkLimit));
+  const groupWalk = Math.min(...submissions.map((s) => stepsToKm(s.stepLimit)));
 
   if (!plan) {
     return (
@@ -114,7 +115,7 @@ export default function Plan() {
                         <div className="mt-1.5 flex -space-x-1">
                           {it.participants.map((id) => (
                             <span key={id} className="rounded-full border-2 border-white">
-                              <Avatar name={MEMBER_MAP[id].name} color={MEMBER_MAP[id].color} size={20} />
+                              <Avatar name={findMember(id).name} color={findMember(id).color} size={20} />
                             </span>
                           ))}
                         </div>

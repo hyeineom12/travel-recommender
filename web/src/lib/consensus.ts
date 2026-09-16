@@ -1,4 +1,4 @@
-import { findPlace } from "./places";
+import { allPlaces, findPlace } from "./places";
 import type {
   ConsensusResult,
   MemberSatisfaction,
@@ -6,7 +6,24 @@ import type {
   Selection,
   Strategy,
   Submission,
+  SubmissionView,
 } from "./types";
+
+/* ══════════════ 입력 단위 환산 ══════════════ */
+
+/** 성인 평균 보폭(m). 걸음 수를 거리로 바꾸는 데 쓴다 */
+export const STEP_M = 0.7;
+
+export const stepsToKm = (steps: number) => (steps * STEP_M) / 1000;
+export const kmToSteps = (km: number) => Math.round((km * 1000) / STEP_M);
+
+/** 하루 예산 × 일수 = 여행 예산 */
+export const tripBudget = (sub: Submission, days: number) => sub.budgetPerDay * days;
+
+/** 사용자 단위(하루 얼마·몇 보)를 계산 단위(총액·km)로 바꾼다 */
+export function toView(sub: Submission, days: number): SubmissionView {
+  return { ...sub, budget: tripBudget(sub, days), walkLimit: stepsToKm(sub.stepLimit) };
+}
 
 /* ══════════════ 거리 · 이동 ══════════════ */
 
@@ -68,7 +85,7 @@ export const WEIGHTS = {
  * 한계 안에서는 많이 쓸수록(=많이 볼수록) 오히려 만족이 올라간다.
  */
 export function satisfactionOf(
-  sub: Submission,
+  sub: SubmissionView,
   chosen: Selection[],
   costPerPerson: number,
   walkPerDay: number
@@ -148,7 +165,7 @@ function categoryTaste(sub: Submission): Partial<Record<string, number>> {
 }
 
 /** 개인 효용 (0~1) */
-export function utilityOf(place: Place, sub: Submission, taste = categoryTaste(sub)): number {
+export function utilityOf(place: Place, sub: SubmissionView, taste = categoryTaste(sub)): number {
   if (sub.veto === place.id) return 0;
   if (sub.must === place.id) return 1;
 
@@ -168,7 +185,7 @@ export function utilityOf(place: Place, sub: Submission, taste = categoryTaste(s
 }
 
 /** 전략별 장소 점수. 값이 클수록 먼저 채택된다 */
-function scorePlace(place: Place, subs: Submission[], strategy: Strategy): number {
+function scorePlace(place: Place, subs: SubmissionView[], strategy: Strategy): number {
   const utils = subs.map((s) => utilityOf(place, s));
 
   switch (strategy) {
@@ -186,9 +203,11 @@ function scorePlace(place: Place, subs: Submission[], strategy: Strategy): numbe
 }
 
 export function buildConsensus(input: ConsensusInput): ConsensusResult {
-  const { submissions: subs, nights, strategy } = input;
+  const { nights, strategy } = input;
   const allowPartial = input.allowPartial ?? true;
   const days = nights + 1;
+  // 사용자는 '하루 얼마·몇 보'로 답하지만, 채택 계산은 여행 총액과 km로 한다
+  const subs = input.submissions.map((s) => toView(s, days));
   // 하루에 '고른 장소'를 넣을 자리. 식사·카페는 배치 단계에서 따로 채우므로 적게 잡는다.
   const slotsPerDay = input.slotsPerDay ?? 3;
   const capacity = days * slotsPerDay;
@@ -276,14 +295,36 @@ export function buildConsensus(input: ConsensusInput): ConsensusResult {
     excluded.push({ ...makeSel(place, "option", []), excluded: "budget" });
   }
 
+  // 6. 아무도 고르지 않았지만 모두에게 무난한 곳을 AI가 채운다.
+  //    사람이 고른 곳이 자리를 다 못 채웠을 때만 동작하고, 남은 예산 안에서만 넣는다.
+  //    프로토타입에서는 그룹 효용이 높은 순으로 고르는 규칙이 AI 역할을 대신한다.
+  const chosenIds = new Set(selections.map((s) => s.place.id));
+  const aiPool = allPlaces()
+    .filter((p) => !chosenIds.has(p.id) && !vetoed.has(p.id) && !candidateIds.has(p.id))
+    .map((p) => ({ place: p, score: scorePlace(p, subs, strategy) }))
+    .sort((a, b) => b.score - a.score);
+
+  for (const { place, score } of aiPool) {
+    if (selections.filter((s) => s.tier === "core").length >= capacity) break;
+    if (cost + place.cost > groupBudget) continue;
+    // 전원이 어느 정도 받아들일 만한 곳만 — 누군가에게 확실히 싫은 곳은 넣지 않는다
+    if (Math.min(...subs.map((s) => utilityOf(place, s))) < 0.2) continue;
+    if (score < 0.3) continue;
+    selections.push({
+      ...makeSel(place, "core", subs.map((s) => s.memberId)),
+      aiAdded: true,
+    });
+    cost += place.cost;
+  }
+
   const core = selections.filter((s) => s.tier === "core");
   const optionSels = selections.filter((s) => s.tier === "option");
   const coreCost = core.reduce((s, x) => s + x.place.cost, 0);
 
-  // 6. 걷기 부담 추정 — 코어 장소를 지역별로 묶었을 때의 하루 평균
+  // 7. 걷기 부담 추정 — 코어 장소를 지역별로 묶었을 때의 하루 평균
   const walkPerDay = estimateWalkPerDay(core.map((s) => s.place), days);
 
-  // 7. 만족도
+  // 8. 만족도
   const satisfaction = subs.map((s) => satisfactionOf(s, selections, coreCost, walkPerDay));
   const scores = satisfaction.map((s) => s.score);
 

@@ -32,11 +32,12 @@ function makeMember(id, rnd) {
   const veto = rnd() < 0.6 ? P.PLACES[Math.floor(rnd()*P.PLACES.length)].id : null;
   return {
     memberId: id,
+    longlist: picks,
     picks,
     must: picks[Math.floor(rnd()*picks.length)],
     veto: picks.includes(veto) ? null : veto,
-    budget: Math.round((120000 + rnd()*300000)/10000)*10000,
-    walkLimit: 4 + Math.floor(rnd()*7),
+    budgetPerDay: Math.round((30000 + rnd()*75000)/5000)*5000,
+    stepLimit: 6000 + Math.floor(rnd()*7)*1500,
     activeMin: 330 + Math.floor(rnd()*4)*60,
   };
 }

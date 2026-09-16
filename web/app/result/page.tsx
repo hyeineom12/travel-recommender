@@ -1,6 +1,7 @@
 "use client";
 import { useTrip } from "@/components/store";
-import { MEMBER_MAP, MEMBERS } from "@/lib/places";
+import { findMember } from "@/lib/places";
+import { tripBudget } from "@/lib/consensus";
 import { explainPlace, explainResult } from "@/lib/explain";
 import {
   Avatar, Bar, Body, Card, Dot, Footer, LinkButton, Notice, Screen, SectionTitle, TopBar, pct, won,
@@ -10,12 +11,12 @@ export default function Result() {
   const { state, consensus, submissions } = useTrip();
   const days = state.nights + 1;
   const lines = explainResult(consensus, submissions, days);
-  const groupBudget = Math.min(...submissions.map((s) => s.budget));
+  const groupBudget = Math.min(...submissions.map((s) => tripBudget(s, days)));
   const m = consensus.metrics;
 
   return (
     <Screen className="bg-surface">
-      <TopBar title="합의 결과" subtitle={`오사카 ${state.nights}박 ${days}일 · 5명`} back="/" />
+      <TopBar title="합의 결과" subtitle={`오사카 ${state.nights}박 ${days}일 · ${state.members.length}명`} back="/" />
       <Body>
         <Card className="animate-pop bg-gradient-to-br from-brand-600 to-brand-400 text-white">
           <div className="text-[11px] text-white/70">다 같이 가는 곳</div>
@@ -25,7 +26,7 @@ export default function Result() {
           </div>
           {m.mustKeptRate === 1 && (
             <div className="mt-3 inline-flex rounded-full bg-white/20 px-3 py-1.5 text-[12px] font-semibold">
-              5명의 꼭 가고 싶은 곳, 모두 지켰어요
+              {state.members.length}명의 꼭 가고 싶은 곳, 모두 지켰어요
             </div>
           )}
         </Card>
@@ -43,7 +44,7 @@ export default function Result() {
           <SectionTitle hint="누가 얼마를 적었는지는 비공개">사람별 만족도</SectionTitle>
           <div className="mt-3 space-y-2.5">
             {consensus.satisfaction.map((s) => {
-              const mem = MEMBER_MAP[s.memberId];
+              const mem = findMember(s.memberId);
               return (
                 <div key={s.memberId} className="flex items-center gap-2.5">
                   <Avatar name={mem.name} color={mem.color} size={28} />
@@ -75,6 +76,8 @@ export default function Result() {
                   <div className="flex items-center gap-1.5">
                     {s.mustOf && <span className="text-brand-600">★</span>}
                     <span className="truncate text-[14px] font-bold">{s.place.name}</span>
+                    {s.aiAdded && <span className="chip bg-brand-50 text-brand-600">AI 추가</span>}
+                    {s.place.custom && <span className="chip bg-surface text-ink-500">직접 추가</span>}
                   </div>
                   <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-ink-500">
                     <Dot category={s.place.category} size={6} />{s.place.area}
@@ -110,7 +113,7 @@ export default function Result() {
                       <div className="mt-1.5 flex -space-x-1">
                         {s.participants.map((id) => (
                           <span key={id} className="rounded-full border-2 border-white">
-                            <Avatar name={MEMBER_MAP[id].name} color={MEMBER_MAP[id].color} size={22} />
+                            <Avatar name={findMember(id).name} color={findMember(id).color} size={22} />
                           </span>
                         ))}
                       </div>

@@ -149,18 +149,45 @@ export const PLACE_MAP: Record<string, Place> = PLACES.reduce(
   {} as Record<string, Place>
 );
 
-export const MEMBERS: Member[] = [
-  { id: "me", name: "혜인", color: "#2f45e0" },
-  { id: "yunjin", name: "윤진", color: "#f9584a" },
-  { id: "joeun", name: "조은", color: "#12b98c" },
-  { id: "minseo", name: "민서", color: "#7a5af5" },
-  { id: "doyun", name: "도윤", color: "#f59e0b" },
+/** 참여자 색 — 이름을 직접 입력받으므로 순서대로 배정한다 */
+export const MEMBER_COLORS = ["#2f45e0", "#f9584a", "#12b98c", "#7a5af5", "#f59e0b", "#0ea5e9"];
+
+/** 첫 화면에서 이름을 바꾸기 전의 기본 구성 */
+export const DEFAULT_MEMBERS: Member[] = [
+  { id: "me", name: "나", color: MEMBER_COLORS[0] },
+  { id: "m1", name: "윤진", color: MEMBER_COLORS[1] },
+  { id: "m2", name: "조은", color: MEMBER_COLORS[2] },
+  { id: "m3", name: "민서", color: MEMBER_COLORS[3] },
+  { id: "m4", name: "도윤", color: MEMBER_COLORS[4] },
 ];
 
-export const MEMBER_MAP: Record<string, Member> = MEMBERS.reduce(
-  (a, m) => ({ ...a, [m.id]: m }),
-  {} as Record<string, Member>
-);
+/**
+ * 참여자 레지스트리.
+ * 이름을 첫 화면에서 받으므로 상수로 둘 수 없다. 화면은 store의 members를 쓰고,
+ * 화면 밖(explain 등)에서는 여기 등록된 값을 본다.
+ */
+let MEMBERS_RT: Member[] = DEFAULT_MEMBERS;
+
+export function setMembers(list: Member[]) {
+  MEMBERS_RT = list.length ? list : DEFAULT_MEMBERS;
+}
+
+export function allMembers(): Member[] {
+  return MEMBERS_RT;
+}
+
+export function findMember(id: string): Member {
+  return MEMBERS_RT.find((m) => m.id === id) ?? { id, name: id, color: MEMBER_COLORS[0] };
+}
+
+/** 이름 목록으로 참여자를 만든다. 첫 번째가 '나' */
+export function makeMembers(names: string[]): Member[] {
+  return names.map((name, i) => ({
+    id: i === 0 ? "me" : `m${i}`,
+    name: name.trim() || (i === 0 ? "나" : `친구${i}`),
+    color: MEMBER_COLORS[i % MEMBER_COLORS.length],
+  }));
+}
 
 /** 데이터에 있는 지역 목록 (장소 추가 화면의 선택지) */
 export const AREAS: string[] = [...new Set(PLACES.map((p) => p.area))];

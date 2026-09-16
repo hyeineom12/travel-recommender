@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import { useTrip } from "@/components/store";
 import { buildConsensus } from "@/lib/consensus";
-import { MEMBER_MAP } from "@/lib/places";
+import { findMember } from "@/lib/places";
 import {
   Avatar, Bar, Body, Card, Footer, LinkButton, Notice, Screen, SectionTitle, TopBar, pct,
 } from "@/components/ui";
@@ -161,13 +161,13 @@ export default function Compare() {
           <SectionTitle>입력값 (연구용)</SectionTitle>
           <div className="mt-2 space-y-1.5">
             {submissions.map((s) => {
-              const m = MEMBER_MAP[s.memberId];
+              const m = findMember(s.memberId);
               return (
                 <div key={s.memberId} className="flex items-center gap-2 text-[11.5px]">
                   <Avatar name={m.name} color={m.color} size={22} />
                   <span className="w-10 shrink-0 font-semibold">{m.name}</span>
                   <span className="text-ink-500">
-                    {(s.budget / 10000).toFixed(0)}만원 · {s.walkLimit}km · {s.picks.length}곳
+                    {(s.budgetPerDay / 10000).toFixed(1)}만원/일 · {s.stepLimit.toLocaleString("ko-KR")}보 · {s.picks.length}곳
                   </span>
                 </div>
               );

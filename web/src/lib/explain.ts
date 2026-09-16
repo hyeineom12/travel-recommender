@@ -1,4 +1,5 @@
-import { MEMBER_MAP } from "./places";
+import { findMember } from "./places";
+import { kmToSteps, tripBudget } from "./consensus";
 import type { ConsensusResult, DayPlan, Submission } from "./types";
 
 const won = (n: number) => `${Math.round(n).toLocaleString("ko-KR")}원`;
@@ -10,7 +11,7 @@ const won = (n: number) => `${Math.round(n).toLocaleString("ko-KR")}원`;
  */
 export function explainResult(res: ConsensusResult, subs: Submission[], days: number): string[] {
   const lines: string[] = [];
-  const budget = Math.min(...subs.map((s) => s.budget));
+  const budget = Math.min(...subs.map((s) => tripBudget(s, days)));
 
   lines.push(
     `${subs.length}명이 고른 ${new Set(subs.flatMap((s) => s.picks)).size}곳 중 ` +
@@ -39,6 +40,14 @@ export function explainResult(res: ConsensusResult, subs: Submission[], days: nu
   if (byVeto) parts.push(`빼달라는 요청이 있어 ${byVeto}곳`);
   if (parts.length) lines.push(`${parts.join(", ")}은 이번 일정에서 뺐어요.`);
 
+  const ai = res.selections.filter((s) => s.aiAdded);
+  if (ai.length) {
+    lines.push(
+      `아무도 고르지 않았지만 모두의 조건에 맞는 ${ai.length}곳(${ai.map((s) => s.place.name).join(", ")})은 ` +
+        `AI가 채웠어요. 남은 자리와 남은 예산 안에서만 넣었어요.`
+    );
+  }
+
   if (res.options.length) {
     lines.push(
       `일부만 가는 ${res.options.length}곳은 자유시간에 배치했어요. ` +
@@ -53,7 +62,8 @@ export function explainResult(res: ConsensusResult, subs: Submission[], days: nu
 export function explainPlace(res: ConsensusResult, placeId: string): string | null {
   const sel = res.selections.find((s) => s.place.id === placeId);
   if (sel) {
-    if (sel.mustOf) return `${MEMBER_MAP[sel.mustOf]?.name}님이 꼭 가고 싶다고 한 곳이에요.`;
+    if (sel.aiAdded) return "아무도 고르지 않았지만 모두의 취향·예산에 맞아 AI가 넣은 곳이에요.";
+    if (sel.mustOf) return `${findMember(sel.mustOf).name}님이 꼭 가고 싶다고 한 곳이에요.`;
     if (sel.tier === "core") return `${sel.votes}명이 골랐고 모두의 예산 안에 들어와요.`;
     return `${sel.participants.length}명만 조건이 맞아서 자유시간 일정으로 넣었어요.`;
   }
@@ -75,7 +85,7 @@ export function explainDay(plan: DayPlan, walkLimit: number): string {
   const moveText = hours ? `${hours}시간 ${mins}분` : `${mins}분`;
   const base = `오늘은 ${plan.walkKm}km를 걷고, 이동에 약 ${moveText}이 걸려요. (대중교통 포함 총 ${plan.totalKm}km)`;
   if (plan.walkKm > walkLimit) {
-    return `${base} 걷는 거리가 가장 부담되는 분의 한계 ${walkLimit}km를 넘어요. 일부를 자유 선택으로 돌리는 게 좋겠어요.`;
+    return `${base} 걷는 거리가 가장 부담되는 분의 한계 ${kmToSteps(walkLimit).toLocaleString("ko-KR")}보를 넘어요. 일부를 자유 선택으로 돌리는 게 좋겠어요.`;
   }
   return `${base} 걷는 거리가 모두의 한계 안에 들어와요.`;
 }

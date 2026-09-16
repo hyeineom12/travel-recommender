@@ -58,18 +58,34 @@ export interface Member {
 /** 각자의 비공개 입력 */
 export interface Submission {
   memberId: string;
-  /** 가고 싶은 장소 id 목록 */
+  /**
+   * 1차 — 검색으로 직접 찾은 5곳.
+   * 그룹 후보 풀은 전원의 longlist를 합친 것이다.
+   */
+  longlist: string[];
+  /** 2차 — 그룹 후보 풀에서 다시 고른 가고 싶은 장소 id 목록 */
   picks: string[];
   /** 꼭 가고 싶은 곳 (picks 중 하나) */
   must: string | null;
   /** 가고 싶지 않은 곳 */
   veto: string | null;
-  /** 1인 예산 상한(원) */
-  budget: number;
-  /** 하루 걷기 한계(km) */
-  walkLimit: number;
+  /** 하루에 쓸 수 있는 돈(원). 여행 전체 예산은 일수를 곱해 구한다 */
+  budgetPerDay: number;
+  /** 하루 걸을 수 있는 걸음 수(보) */
+  stepLimit: number;
   /** 하루 활동 가능 시간(분) */
   activeMin: number;
+}
+
+/**
+ * 계산용으로 단위를 환산한 입력.
+ * 사용자는 '하루 얼마·몇 보'로 말하지만 합의 계산은 '여행 총액·km'로 한다.
+ */
+export interface SubmissionView extends Submission {
+  /** 여행 전체 예산(원) = budgetPerDay × 일수 */
+  budget: number;
+  /** 하루 걷기 한계(km) = stepLimit × 보폭 */
+  walkLimit: number;
 }
 
 export type Strategy = "average" | "least_misery" | "fairness";
@@ -87,6 +103,8 @@ export interface Selection {
   participants: string[];
   /** 제외됐다면 이유 */
   excluded?: "veto" | "budget" | "time" | "walk";
+  /** 아무도 고르지 않았지만 합의에 맞아 AI가 채운 곳인가 */
+  aiAdded?: boolean;
 }
 
 export interface MemberSatisfaction {
