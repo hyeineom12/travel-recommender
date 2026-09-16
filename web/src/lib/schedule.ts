@@ -1,5 +1,5 @@
 import { travel } from "./consensus";
-import { PLACES } from "./places";
+import { allPlaces } from "./places";
 import type { DayPlan, Place, ScheduleItem, Selection } from "./types";
 
 const DAY_START = 9 * 60;
@@ -57,7 +57,7 @@ function pickFiller(
   vetoed: Set<string>,
   wantCafe = false
 ): Place | null {
-  const cands = PLACES.filter(
+  const cands = allPlaces().filter(
     (p) =>
       !used.has(p.id) &&
       !vetoed.has(p.id) &&

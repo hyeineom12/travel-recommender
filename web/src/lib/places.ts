@@ -161,3 +161,87 @@ export const MEMBER_MAP: Record<string, Member> = MEMBERS.reduce(
   (a, m) => ({ ...a, [m.id]: m }),
   {} as Record<string, Member>
 );
+
+/** 데이터에 있는 지역 목록 (장소 추가 화면의 선택지) */
+export const AREAS: string[] = [...new Set(PLACES.map((p) => p.area))];
+
+/** 지역 중심 좌표 — 사용자가 추가한 장소의 좌표를 여기서 빌린다 */
+const AREA_CENTER: Record<string, { lat: number; lng: number }> = AREAS.reduce((a, area) => {
+  const ps = PLACES.filter((p) => p.area === area);
+  return {
+    ...a,
+    [area]: {
+      lat: ps.reduce((s, p) => s + p.lat, 0) / ps.length,
+      lng: ps.reduce((s, p) => s + p.lng, 0) / ps.length,
+    },
+  };
+}, {} as Record<string, { lat: number; lng: number }>);
+
+/**
+ * 카테고리별 기본값.
+ * 사용자는 이름·카테고리·지역 정도만 알고 있으므로, 나머지 필드는 같은 카테고리
+ * 장소들의 중앙값 성격의 값으로 채운다. 본 구현에서는 OSM·리뷰 데이터로 대체한다.
+ */
+const CATEGORY_DEFAULT: Record<CategoryId, Pick<Place, "cost" | "stayMin" | "openFrom" | "openTo" | "exposure" | "covered" | "bagLoad">> = {
+  landmark: { cost: 8000, stayMin: 90, openFrom: t(9), openTo: t(18), exposure: 0.6, covered: false, bagLoad: 0 },
+  food:     { cost: 12000, stayMin: 60, openFrom: t(11), openTo: t(21), exposure: 0, covered: true, bagLoad: 0 },
+  cafe:     { cost: 8000, stayMin: 50, openFrom: t(10), openTo: t(20), exposure: 0, covered: true, bagLoad: 0 },
+  shopping: { cost: 30000, stayMin: 70, openFrom: t(10), openTo: t(21), exposure: 0, covered: true, bagLoad: 0.5 },
+  culture:  { cost: 6000, stayMin: 80, openFrom: t(9,30), openTo: t(17), exposure: 0.3, covered: true, bagLoad: 0 },
+  activity: { cost: 25000, stayMin: 120, openFrom: t(10), openTo: t(19), exposure: 0.6, covered: false, bagLoad: 0 },
+  nature:   { cost: 0, stayMin: 60, openFrom: t(6), openTo: t(20), exposure: 1, covered: false, bagLoad: 0 },
+};
+
+export interface CustomPlaceInput {
+  name: string;
+  category: CategoryId;
+  area: string;
+  /** 1인 예상 지출(원). 비우면 카테고리 기본값 */
+  cost?: number;
+  /** 예상 체류 시간(분). 비우면 카테고리 기본값 */
+  stayMin?: number;
+}
+
+/**
+ * 사용자가 직접 추가한 장소를 Place로 만든다.
+ * 좌표는 지역 중심값을 빌려 쓰므로 동선 계산은 대략적이다 — UI에서 그렇게 안내한다.
+ * popularity는 '아무도 모르는 곳'이라는 뜻에서 낮게 둔다. 본인이 골랐으므로
+ * 본인 효용은 직접 선택 값(0.85)으로 계산되고, 이 값은 남에게 주는 부분 효용에만 쓰인다.
+ */
+export function makeCustomPlace(input: CustomPlaceInput): Place {
+  const base = CATEGORY_DEFAULT[input.category];
+  const center = AREA_CENTER[input.area] ?? { lat: 34.6687, lng: 135.5013 };
+  return {
+    ...base,
+    id: `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    name: input.name.trim(),
+    area: input.area,
+    category: input.category,
+    lat: center.lat,
+    lng: center.lng,
+    cost: input.cost ?? base.cost,
+    stayMin: input.stayMin ?? base.stayMin,
+    popularity: 0.25,
+    blurb: "직접 추가한 장소예요. 위치는 지역 중심으로 잡혀 있어 동선은 대략값입니다.",
+    custom: true,
+  };
+}
+
+/**
+ * 사용자가 추가한 장소 레지스트리.
+ * PLACES는 정적 데이터라 추가분을 담을 수 없어, 조회 지점(findPlace·allPlaces)을
+ * 한 곳으로 모으고 화면 쪽에서 setCustomPlaces로 최신 목록을 밀어 넣는다.
+ */
+let CUSTOM: Place[] = [];
+
+export function setCustomPlaces(list: Place[]) {
+  CUSTOM = list;
+}
+
+export function allPlaces(): Place[] {
+  return CUSTOM.length ? [...PLACES, ...CUSTOM] : PLACES;
+}
+
+export function findPlace(id: string): Place | undefined {
+  return PLACE_MAP[id] ?? CUSTOM.find((p) => p.id === id);
+}

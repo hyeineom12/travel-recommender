@@ -1,4 +1,4 @@
-import { PLACE_MAP } from "./places";
+import { findPlace } from "./places";
 import type {
   ConsensusResult,
   MemberSatisfaction,
@@ -138,7 +138,7 @@ export interface ConsensusInput {
 function categoryTaste(sub: Submission): Partial<Record<string, number>> {
   const counts: Record<string, number> = {};
   sub.picks.forEach((id) => {
-    const p = PLACE_MAP[id];
+    const p = findPlace(id);
     if (p) counts[p.category] = (counts[p.category] ?? 0) + 1;
   });
   const total = sub.picks.length || 1;
@@ -217,18 +217,18 @@ export function buildConsensus(input: ConsensusInput): ConsensusResult {
   // 3. 거부된 장소 제외
   candidateIds.forEach((id) => {
     if (vetoed.has(id)) {
-      const place = PLACE_MAP[id];
+      const place = findPlace(id);
       if (place) excluded.push({ ...makeSel(place, "option", []), excluded: "veto" });
     }
   });
 
-  const alive = [...candidateIds].filter((id) => !vetoed.has(id)).map((id) => PLACE_MAP[id]).filter(Boolean);
+  const alive = [...candidateIds].filter((id) => !vetoed.has(id)).map((id) => findPlace(id)).filter((p): p is Place => !!p);
 
   // 4. 각자의 '꼭'을 먼저 확정
   const allIds = new Set<string>();
   subs.forEach((s) => {
     if (!s.must || vetoed.has(s.must)) return;
-    const place = PLACE_MAP[s.must];
+    const place = findPlace(s.must);
     if (!place || allIds.has(place.id)) return;
     allIds.add(place.id);
     selections.push(makeSel(place, "core", subs.map((x) => x.memberId)));

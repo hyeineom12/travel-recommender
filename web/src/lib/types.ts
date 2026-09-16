@@ -45,6 +45,8 @@ export interface Place {
    */
   popularity: number;
   blurb: string;
+  /** 사용자가 직접 추가한 장소인가 (좌표·비용이 추정값) */
+  custom?: boolean;
 }
 
 export interface Member {
